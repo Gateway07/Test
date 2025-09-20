@@ -57,6 +57,14 @@ def parse_separators(s: str) -> List[str]:
     return [part for part in (p.strip() for p in s.split(",")) if part]
 
 
+def _resolve_persist_dir(args: argparse.Namespace) -> str:
+    if getattr(args, "CHROMA_PERSIST_DIR", None):
+        return args.CHROMA_PERSIST_DIR
+    if getattr(args, "persist_dir", None):
+        return args.persist_dir
+    return os.getenv("CHROMA_PERSIST_DIR", ".\\chroma")
+
+
 def command_pipeline(args: argparse.Namespace) -> int:
     logger = logging.getLogger("pipeline")
 
@@ -99,10 +107,11 @@ def command_pipeline(args: argparse.Namespace) -> int:
     chunks = chunker.chunk(to_chunk)
 
     # Vectorize
+    persist_dir = _resolve_persist_dir(args)
     vect = Vectorizer(
         model=args.model,
         collection=args.collection,
-        persist_dir=args.persist_dir,
+        persist_dir=persist_dir,
         logger=logging.getLogger("vectorizer"),
     )
 
@@ -130,10 +139,11 @@ def command_query(args: argparse.Namespace) -> int:
         logger.error("-q requires a query string, e.g., -q \"<your question>\"")
         return 2
 
+    persist_dir = _resolve_persist_dir(args)
     vect = Vectorizer(
         model=args.model or os.getenv("EMBED_MODEL", "FRIDA"),
         collection=args.collection,
-        persist_dir=args.persist_dir,
+        persist_dir=persist_dir,
         logger=logging.getLogger("vectorizer"),
     )
 
@@ -199,9 +209,12 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--chunk_size", type=int, default=pipeline_cfg.get("chunk_size", 512), help="Target tokens per chunk (default: 512)")
     parser.add_argument("--overlap_size", type=int, default=pipeline_cfg.get("overlap_size", 128), help="Token overlap between chunks (default: 128)")
     parser.add_argument("--separators", type=str, default=pipeline_cfg.get("separators", DEFAULT_SEPARATORS), help="Comma-separated ordered separators")
-    parser.add_argument("--model", type=str, default=pipeline_cfg.get("model", os.getenv("EMBED_MODEL", "FRIDA")), help="Ollama embedding model (default: FRIDA)")
-    parser.add_argument("--collection", type=str, default=pipeline_cfg.get("collection", os.getenv("CHROMA_COLLECTION", "rag-docs")), help="Chroma collection name")
-    parser.add_argument("--persist_dir", type=str, default=pipeline_cfg.get("persist_dir", os.getenv("CHROMA_PERSIST_DIR", ".\\chroma")), help="Chroma persist directory")
+    # Single source of truth for model/collection/persist_dir from environment (config.environment)
+    parser.add_argument("--model", type=str, default=os.getenv("MODEL", os.getenv("EMBED_MODEL", "FRIDA")), help="Ollama embedding model (env: MODEL)")
+    parser.add_argument("--collection", type=str, default=os.getenv("CHROMA_COLLECTION", "rag-docs"), help="Chroma collection name (env: CHROMA_COLLECTION)")
+    # Prefer explicit env-style flag; keep --persist_dir as backward-compatible alias
+    parser.add_argument("--CHROMA_PERSIST_DIR", type=str, default=os.getenv("CHROMA_PERSIST_DIR", ".\\chroma"), help="Chroma persist directory (env/flag: CHROMA_PERSIST_DIR)")
+    parser.add_argument("--persist_dir", type=str, default=None, help="[DEPRECATED] Use --CHROMA_PERSIST_DIR instead")
     parser.add_argument("--rebuild", action="store_true", default=bool(pipeline_cfg.get("rebuild", False)), help="Drop existing collection before ingesting")
     parser.add_argument("--file_glob", type=str, default=pipeline_cfg.get("file_glob", "**/*.{docx,rtf}"), help="Glob filter under input_dir")
     parser.add_argument("--max_files", type=int, default=pipeline_cfg.get("max_files", None), help="Limit number of files to process")
