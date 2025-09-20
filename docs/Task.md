@@ -36,17 +36,19 @@
 #### Open-source framework choice for parsing and chunking
 
 - Parsing `.docx`: `python-docx`
-  - Widely used and actively maintained.
-  - Reliable paragraph-level extraction and basic structural markers for linear Word documents typical to insurance rules.
-  - Simple API and minimal dependencies, suitable for Windows 10 environments.
+    - Widely used and actively maintained.
+    - Reliable paragraph-level extraction and basic structural markers for linear Word documents typical to insurance
+      rules.
+    - Simple API and minimal dependencies, suitable for Windows 10 environments.
 - Parsing `.rtf`: `striprtf`
-  - Lightweight RTF-to-text conversion that handles Cyrillic text well in practice.
-  - Fits the assumption of simple/linear text without requiring heavy formatting support.
-  - Alternative (if richer structure is ever needed): `pyrtf-ng`.
+    - Lightweight RTF-to-text conversion that handles Cyrillic text well in practice.
+    - Fits the assumption of simple/linear text without requiring heavy formatting support.
+    - Alternative (if richer structure is ever needed): `pyrtf-ng`.
 - Chunking: `langchain-text-splitters` (`RecursiveCharacterTextSplitter`)
-  - Honors an ordered list of separators (e.g., `\n\n`, `\n`, sentence boundaries, whitespace) to avoid breaking semantic units.
-  - Exposes configurable `chunk_size` and `chunk_overlap` to match embedding model context constraints.
-  - Proven in multilingual scenarios, practical for Russian text and contract-style prose.
+    - Honors an ordered list of separators (e.g., `\n\n`, `\n`, sentence boundaries, whitespace) to avoid breaking
+      semantic units.
+    - Exposes configurable `chunk_size` and `chunk_overlap` to match embedding model context constraints.
+    - Proven in multilingual scenarios, practical for Russian text and contract-style prose.
 
 ### 3. Documents vectorizing
 
@@ -65,8 +67,8 @@
 - Candidate examples (available in the local Ollama install):
     - `FRIDA` (evilfreelancer/FRIDA) - Specifically finetuned for Russian/English text. Max context window ~512 tokens.
     - `bge-m3` (multilingual, strong general retrieval). Maximum input length of 8192 tokens.
-    - `nomic-embed-text` (good baseline; validate RU performance on your corpus). May not capture complex semantics as
-      finely.
+    - `nomic-embed-text` (good baseline; validate RU performance on your corpus). Limit of 8192 tokens. May not capture
+      complex semantics as finely.
 
 Default in this task remains `FRIDA` as a first baseline.
 
@@ -84,13 +86,13 @@ Default in this task remains `FRIDA` as a first baseline.
     - Purpose: Preserve context across chunk boundaries for topics spanning sentences/paragraphs.
     - Reduce overlap for very long chunks to control total tokens and ingestion cost.
     - Default overlap size is 128 tokens.
-  
+
 - `--separators`:
     - Ordered list to respect structure: `"\n\n,\n,\.\s,\s"`.
     - For Russian, sentence boundary `\.\s` is a practical proxy; adjust if documents contain many abbreviations.
 
 - Retrieval `--k`. Default is `8`. Higher values increase recall but may reduce precision and add noise.
-  
+
 ### 4. Testing CLI
 
 - Implement CLI for testing with the following commands:

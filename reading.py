@@ -66,7 +66,42 @@ class DocumentReader:
         if not base.exists() or not base.is_dir():
             raise ValueError(f"Input directory does not exist or is not a directory: {input_dir}")
 
-        matches = list(base.glob(file_glob))
+        # pathlib does NOT support brace expansion like **/*.{docx,rtf}
+        # Expand manually into multiple patterns if braces are present; otherwise, use as-is.
+        patterns: List[str]
+        if "{" in file_glob and "}" in file_glob:
+            brace_content = file_glob[file_glob.find("{") + 1 : file_glob.find("}")]
+            exts = [p.strip().lstrip(".") for p in brace_content.split(",") if p.strip()]
+            prefix = file_glob[: file_glob.find("{")]
+            suffix = file_glob[file_glob.find("}") + 1 :]
+            patterns = [f"{prefix}{ext}{suffix}" for ext in exts]
+        else:
+            patterns = [file_glob]
+
+        matched_paths: List[Path] = []
+        for pat in patterns:
+            # Use rglob if pattern starts with '**/' to ensure recursive search
+            if pat.startswith("**/"):
+                matched_paths.extend(base.rglob(pat[3:]))
+            else:
+                matched_paths.extend(base.glob(pat))
+
+        # De-duplicate and filter by supported extensions
+        seen = set()
+        matches: List[Path] = []
+        for p in matched_paths:
+            if not p.is_file():
+                continue
+            ext = p.suffix.lower()
+            if ext not in self.SUPPORTED_EXTENSIONS:
+                continue
+            rp = str(p.resolve())
+            if rp in seen:
+                continue
+            seen.add(rp)
+            matches.append(p)
+
+        self.logger.info(f"Discovered {len(matches)} candidate files in {input_dir} with pattern(s) {patterns}")
         docs: List[ParsedDocument] = []
         for idx, path in enumerate(matches):
             if max_files is not None and idx >= max_files:

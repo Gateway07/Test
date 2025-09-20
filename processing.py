@@ -126,17 +126,37 @@ class Vectorizer:
         except Exception as exc:
             self.logger.warning(f"Failed to rebuild collection '{self.collection}': {exc}")
 
-    def upsert(self, docs: List[Document]) -> None:
-        """Upsert documents into Chroma store."""
-        if not docs:
+    def upsert(self, docs: List[Document], batch_size: int = 64) -> None:
+        """Upsert documents into Chroma store with progress logging.
+
+        Args:
+            docs: List of chunk documents to index.
+            batch_size: Number of docs per add_documents() call.
+        """
+        total = len(docs)
+        if total == 0:
+            self.logger.info("No chunks to upsert.")
             return
-        self.vstore.add_documents(docs)
-        # Persist
+
+        self.logger.info(
+            f"Starting vectorization/upsert: total_chunks={total}, batch_size={batch_size}, collection='{self.collection}'"
+        )
+        for start in range(0, total, batch_size):
+            end = min(start + batch_size, total)
+            batch = docs[start:end]
+            self.vstore.add_documents(batch)
+            done = end
+            percent = int(done * 100 / total)
+            self.logger.info(f"Progress: {done}/{total} chunks ({percent}%)")
+
+        # Persist at the end
         try:
             self.vstore.persist()
         except Exception:
             pass
-        self.logger.info(f"Upserted {len(docs)} chunks into collection '{self.collection}' at {self.persist_dir}")
+        self.logger.info(
+            f"Completed upsert of {total} chunks into collection '{self.collection}' at {self.persist_dir}"
+        )
 
     def similarity_search(
         self, query: str, k: int = 8, include_scores: bool = False

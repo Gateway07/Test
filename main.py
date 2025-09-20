@@ -12,8 +12,6 @@ Defaults are aligned with docs/Specification.md:
 - retrieval k: 8
 - single-threaded
 """
-from __future__ import annotations
-
 import argparse
 import json
 import logging
