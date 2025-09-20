@@ -1,0 +1,42 @@
+# Global environment defaults
+# These can also be provided via environment variables; CLI flags override both.
+# Examples:
+#   OLLAMA_HOST: http://127.0.0.1:11434
+#   CHROMA_PERSIST_DIR: .\\chroma
+#   CHROMA_COLLECTION: rag-docs
+#   EMBED_MODEL: FRIDA
+
+environment:
+  OLLAMA_HOST: http://127.0.0.1:11434
+  CHROMA_PERSIST_DIR: '.\\chroma'
+  CHROMA_COLLECTION: rag-docs
+  EMBED_MODEL: FRIDA
+
+# Defaults for the pipeline command (-p)
+pipeline:
+  input_dir: ''            # REQUIRED at runtime; leave empty or set a path
+  chunk_size: 512          # tokens per chunk
+  overlap_size: 128        # tokens overlap between chunks
+  separators: '\n\n,\n,\.\s,\s'
+  model: FRIDA
+  collection: rag-docs
+  persist_dir: '.\\chroma'
+  rebuild: false
+  file_glob: "**/*.{docx,rtf}"
+  max_files: null          # integer or null
+  print_stats: false
+
+# Defaults for the query command (-q)
+query:
+  k: 8
+  collection: rag-docs
+  persist_dir: '.\\chroma'
+  model: FRIDA
+  include_scores: false
+  limit_per_doc: null      # integer or null
+  filters: null            # JSON string or null
+
+# Global app options
+app:
+  verbose: false
+  no_color: false

@@ -155,7 +155,7 @@ Exit Codes:
   - `CHROMA_PERSIST_DIR`: Default persist directory for Chroma.
   - `CHROMA_COLLECTION`: Default collection name.
   - `EMBED_MODEL`: Default Ollama embedding model name. Default: `FRIDA`.
-- Config file (optional): `config.yaml` to supply defaults for the above and chunking parameters.
+- Config file: `config.yaml` to supply defaults for the above and chunking parameters.
 - CLI flags always override environment/config defaults.
 
 ## Dependencies and Runtime Assumptions
