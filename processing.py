@@ -5,12 +5,10 @@ Chunking and vectorizing pipeline.
 - Embedding via langchain_community.OllamaEmbeddings (default model: FRIDA)
 - Vector store via langchain_chroma.Chroma with persistence
 """
-from __future__ import annotations
-
 import datetime as dt
 import logging
 from dataclasses import dataclass
-from typing import Iterable, List, Optional, Sequence, Tuple
+from typing import List, Optional, Sequence, Tuple
 
 from langchain_community.embeddings import OllamaEmbeddings
 from langchain_chroma import Chroma
@@ -115,8 +113,11 @@ class Vectorizer:
                 try:
                     client.delete_collection(self.collection)
                     self.logger.info(f"Deleted existing collection: {self.collection}")
-                except Exception:
-                    pass
+                except Exception as exc:
+                    self.logger.error(
+                        f"Error deleting existing collection '{self.collection}': {exc}",
+                        exc_info=True,
+                    )
             # Recreate by reinitializing vstore
             self.vstore = Chroma(
                 collection_name=self.collection,
@@ -124,7 +125,7 @@ class Vectorizer:
                 persist_directory=self.persist_dir,
             )
         except Exception as exc:
-            self.logger.warning(f"Failed to rebuild collection '{self.collection}': {exc}")
+            self.logger.error(f"Failed to rebuild collection '{self.collection}': {exc}")
 
     def upsert(self, docs: List[Document], batch_size: int = 64) -> None:
         """Upsert documents into Chroma store with progress logging.
@@ -152,8 +153,11 @@ class Vectorizer:
         # Persist at the end
         try:
             self.vstore.persist()
-        except Exception:
-            pass
+        except Exception as exc:
+            self.logger.warning(
+                f"Failed to persist Chroma collection '{self.collection}' to '{self.persist_dir}': {exc}",
+                exc_info=True,
+            )
         self.logger.info(
             f"Completed upsert of {total} chunks into collection '{self.collection}' at {self.persist_dir}"
         )
